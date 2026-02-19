@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  logistics-alert:
+    build: .
+    container_name: logistics-alert-system
+    environment:
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - TZ=Europe/Berlin
+    volumes:
+      - ./config.json:/app/config.json
+      - ./sent_news.json:/app/sent_news.json
+      - ./logs:/app/logs
+    restart: unless-stopped
+    # 使用 cron 调度（需要修改 Dockerfile CMD）
+    # 或者使用外部调度工具定时启动容器

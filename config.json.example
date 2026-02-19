@@ -1,0 +1,21 @@
+{
+  "tavily_api_key": "YOUR_TAVILY_API_KEY",
+  "feishu": {
+    "app_id": "YOUR_FEISHU_APP_ID",
+    "app_secret": "YOUR_FEISHU_APP_SECRET",
+    "webhook_url": "YOUR_FEISHU_WEBHOOK_URL",
+    "chat_id": "YOUR_FEISHU_CHAT_ID",
+    "comment": "飞书配置：支持webhook或机器人推送。webhook_url用于webhook推送，app_id/app_secret/chat_id用于机器人推送"
+  },
+  "monitoring": {
+    "countries": ["Germany", "France", "Netherlands", "Belgium", "Poland"],
+    "weather_check_time": "08:00",
+    "news_check_time": "09:00",
+    "weather_keywords": ["extreme weather", "storm", "snow", "heavy rain", "transport disruption", "logistics weather"],
+    "news_keywords": ["strike", "fire", "warehouse", "port closure", "transport disruption", "logistics incident", "border closure"]
+  },
+  "storage": {
+    "sent_news_file": "sent_news.json",
+    "max_history_days": 30
+  }
+}

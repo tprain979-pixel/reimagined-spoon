@@ -1,0 +1,11 @@
+# 欧洲物流预警系统 - 定时任务配置
+# 推荐模式：每天 2 次（早晚各一次）
+# 配额消耗：120 次/月（12%）
+
+# 早上检查（8:00 天气，9:00 新闻）
+0 8 * * * cd /app/workspace/7415868573489743386/1/2/157 && /usr/bin/python3 logistics_alert_full.py weather >> /app/workspace/7415868573489743386/1/2/157/logs/weather.log 2>&1
+0 9 * * * cd /app/workspace/7415868573489743386/1/2/157 && /usr/bin/python3 logistics_alert_full.py news >> /app/workspace/7415868573489743386/1/2/157/logs/news.log 2>&1
+
+# 晚上检查（18:00 天气，19:00 新闻）
+0 18 * * * cd /app/workspace/7415868573489743386/1/2/157 && /usr/bin/python3 logistics_alert_full.py weather >> /app/workspace/7415868573489743386/1/2/157/logs/weather.log 2>&1
+0 19 * * * cd /app/workspace/7415868573489743386/1/2/157 && /usr/bin/python3 logistics_alert_full.py news >> /app/workspace/7415868573489743386/1/2/157/logs/news.log 2>&1

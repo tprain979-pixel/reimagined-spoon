@@ -1,0 +1,109 @@
+name: 欧洲物流预警推送
+
+on:
+  schedule:
+    # 每天早上 8:00 和晚上 18:00 检查天气（UTC 时间，需要转换）
+    # 北京时间 8:00 = UTC 0:00
+    # 北京时间 18:00 = UTC 10:00
+    - cron: '0 0 * * *'   # 早上 8:00 (北京时间)
+    - cron: '0 10 * * *'  # 晚上 18:00 (北京时间)
+
+  # 支持手动触发
+  workflow_dispatch:
+    inputs:
+      check_type:
+        description: '检查类型'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - weather
+          - news
+
+jobs:
+  weather-alert:
+    name: 天气预警检查
+    runs-on: ubuntu-latest
+    # 仅在定时触发或手动选择 weather/both 时运行
+    if: github.event_name == 'schedule' || github.event.inputs.check_type == 'weather' || github.event.inputs.check_type == 'both'
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Python 环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 安装依赖
+        run: |
+          pip install requests
+
+      - name: 执行天气预警检查
+        env:
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+        run: |
+          python logistics_alert_full.py weather
+
+      - name: 上传日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weather-log-${{ github.run_number }}
+          path: logs/weather.log
+          retention-days: 7
+
+  news-alert:
+    name: 物流新闻检查
+    runs-on: ubuntu-latest
+    # 在天气检查后 30 分钟运行（早上 8:30 和晚上 18:30）
+    # 或手动选择 news/both 时运行
+    if: github.event_name == 'schedule' || github.event.inputs.check_type == 'news' || github.event.inputs.check_type == 'both'
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Python 环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 安装依赖
+        run: |
+          pip install requests
+
+      - name: 下载新闻记录
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: sent-news-db
+          path: .
+
+      - name: 执行新闻监控检查
+        env:
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+        run: |
+          python logistics_alert_full.py news
+
+      - name: 上传新闻记录
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sent-news-db
+          path: sent_news.json
+          retention-days: 30
+
+      - name: 上传日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: news-log-${{ github.run_number }}
+          path: logs/news.log
+          retention-days: 7

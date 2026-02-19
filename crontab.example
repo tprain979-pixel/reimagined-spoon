@@ -1,0 +1,36 @@
+# 欧洲物流预警系统 - Crontab 配置示例
+#
+# 使用说明：
+# 1. 将此文件内容添加到 crontab: crontab -e
+# 2. 修改 /path/to/logistics-alert-system 为实际路径
+# 3. 确保 Python 环境已安装所有依赖
+# 4. 创建 logs 目录: mkdir -p logs
+
+# 工作目录（请修改为实际路径）
+WORKING_DIR=/path/to/logistics-alert-system
+
+# Python 环境（如使用虚拟环境，请修改）
+PYTHON=/usr/bin/python3
+
+# ========== 每日定时任务 ==========
+
+# 每天早上 8:00 检查天气预警
+0 8 * * * cd $WORKING_DIR && $PYTHON logistics_alert.py weather >> logs/weather_$(date +\%Y\%m\%d).log 2>&1
+
+# 每天早上 9:00 检查物流新闻
+0 9 * * * cd $WORKING_DIR && $PYTHON logistics_alert.py news >> logs/news_$(date +\%Y\%m\%d).log 2>&1
+
+# ========== 备选方案：一次性执行两项检查 ==========
+
+# 每天早上 8:00 同时检查天气和新闻
+# 0 8 * * * cd $WORKING_DIR && $PYTHON logistics_alert.py both >> logs/alert_$(date +\%Y\%m\%d).log 2>&1
+
+# ========== 日志清理（可选）==========
+
+# 每周日凌晨 2:00 清理 30 天前的日志
+# 0 2 * * 0 find $WORKING_DIR/logs -name "*.log" -mtime +30 -delete
+
+# ========== 健康检查（可选）==========
+
+# 每天中午 12:00 检查系统状态
+# 0 12 * * * cd $WORKING_DIR && $PYTHON test_feishu.py >> logs/health_check.log 2>&1

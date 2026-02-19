@@ -1,0 +1,11 @@
+{
+  "permission_mode": "acceptEdits",
+  "auto_approval": {
+    "enabled": true,
+    "max_turns": 20
+  },
+  "workspace": {
+    "enabled": true,
+    "auto_save": true
+  }
+}
