@@ -64,6 +64,55 @@ def format_news_report(new_news: List[Dict]) -> Optional[str]:
 
     report += "---\n\n"
 
+    # 添加中文概览
+    report += "## 📋 今日概览\n\n"
+
+    # 统计紧急程度
+    high_count = sum(1 for n in new_news if n.get("score", 0) > 0.8)
+    medium_count = sum(1 for n in new_news if 0.5 < n.get("score", 0) <= 0.8)
+    low_count = len(new_news) - high_count - medium_count
+
+    # 生成概览文字
+    report += f"**过去24小时内新增 {len(new_news)} 条物流突发事件。**\n\n"
+
+    # 紧急程度统计
+    urgency_parts = []
+    if high_count > 0:
+        urgency_parts.append(f"🔴 高紧急 {high_count} 条")
+    if medium_count > 0:
+        urgency_parts.append(f"🟡 中等 {medium_count} 条")
+    if low_count > 0:
+        urgency_parts.append(f"🟢 低紧急 {low_count} 条")
+
+    if urgency_parts:
+        report += f"**紧急程度分布：** {' | '.join(urgency_parts)}\n\n"
+
+    # 事件类型分析（基于标题关键词）
+    event_types = []
+    titles_text = " ".join([n.get("title", "").lower() for n in new_news])
+
+    if "strike" in titles_text or "罢工" in titles_text:
+        event_types.append("罢工")
+    if "fire" in titles_text or "火灾" in titles_text:
+        event_types.append("火灾")
+    if "port" in titles_text or "港口" in titles_text:
+        event_types.append("港口问题")
+    if "warehouse" in titles_text or "仓库" in titles_text:
+        event_types.append("仓库问题")
+    if "disruption" in titles_text or "中断" in titles_text:
+        event_types.append("运输中断")
+
+    if event_types:
+        report += f"**涉及类型：** {' | '.join(event_types)}\n\n"
+
+    # 行动建议
+    if high_count > 0:
+        report += "**⚠️ 重点关注：** 发现高紧急事件，建议立即评估对物流的影响并采取应对措施。\n\n"
+    else:
+        report += "**📊 情况评估：** 当前事件紧急程度较低，建议持续关注事态发展。\n\n"
+
+    report += "---\n\n"
+
     report += "## ⚠️ 新增事件详情 | New Incident Details\n\n"
     report += "**⚡ 中文：** 以下为过去24小时内新增的物流相关事件，请注意关注\n"
     report += "**⚡ English:** Following incidents occurred in the past 24 hours, please pay attention\n\n"

@@ -66,8 +66,34 @@ def format_weather_report(search_results: List[Dict]) -> str:
         report += "_💡 提示：系统将持续监控天气变化 | System continues to monitor weather conditions_"
         return report
 
-    # 有预警情况
-    report += f"## ⚠️ 天气预警汇总 | Weather Alert Summary\n\n"
+    # 有预警情况 - 添加中文概览
+    report += f"## 📋 今日概览\n\n"
+
+    # 生成中文概览
+    report += f"**今日监控到 {len(search_results)} 条天气预警信息。**\n\n"
+
+    # 简要列举前3条预警
+    preview_items = []
+    for idx, result in enumerate(search_results[:3], 1):
+        title = result.get("title", "")
+        if title:
+            # 提取关键信息（取前50字符）
+            short_title = title[:50] + "..." if len(title) > 50 else title
+            preview_items.append(f"{idx}. {short_title}")
+
+    if preview_items:
+        report += "主要预警包括：\n"
+        for item in preview_items:
+            report += f"- {item}\n"
+
+    if len(search_results) > 3:
+        report += f"\n还有 {len(search_results) - 3} 条其他预警，详见下方。\n"
+
+    report += "\n**建议：** 请关注天气变化，必要时调整运输计划或路线安排。\n\n"
+
+    report += "---\n\n"
+
+    report += f"## ⚠️ 天气预警详情 | Weather Alert Details\n\n"
     report += f"**🔔 预警数量 | Alert Count:** {len(search_results)} 条 | {len(search_results)} alerts\n\n"
     report += "---\n\n"
 
