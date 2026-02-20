@@ -47,7 +47,7 @@ jobs:
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
         run: |
-          python logistics_alert_full.py weather
+          python logistics_alert_github.py weather
 
       - name: 上传日志
         if: always()
@@ -90,7 +90,7 @@ jobs:
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
         run: |
-          python logistics_alert_full.py news
+          python logistics_alert_github.py news
 
       - name: 上传新闻记录
         if: always()
