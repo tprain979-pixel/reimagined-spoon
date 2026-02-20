@@ -1,0 +1,71 @@
+name: 基础测试
+
+on:
+  workflow_dispatch:
+
+jobs:
+  basic-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 列出文件
+        run: |
+          echo "=== 项目根目录文件 ==="
+          ls -la
+          echo ""
+          echo "=== Python 文件 ==="
+          ls -la *.py
+          echo ""
+          echo "=== 检查关键文件 ==="
+          test -f logistics_alert_github.py && echo "✅ logistics_alert_github.py" || echo "❌ logistics_alert_github.py"
+          test -f weather_monitor.py && echo "✅ weather_monitor.py" || echo "❌ weather_monitor.py"
+          test -f news_monitor.py && echo "✅ news_monitor.py" || echo "❌ news_monitor.py"
+          test -f feishu_sender.py && echo "✅ feishu_sender.py" || echo "❌ feishu_sender.py"
+          test -f storage.py && echo "✅ storage.py" || echo "❌ storage.py"
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装 requests
+        run: pip install requests
+
+      - name: 检查 Secrets
+        env:
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+        run: |
+          echo "=== 检查环境变量 ==="
+          if [ -z "$TAVILY_API_KEY" ]; then
+            echo "❌ TAVILY_API_KEY 未设置"
+            exit 1
+          else
+            echo "✅ TAVILY_API_KEY: ${TAVILY_API_KEY:0:15}..."
+          fi
+
+          if [ -z "$FEISHU_WEBHOOK_URL" ]; then
+            echo "❌ FEISHU_WEBHOOK_URL 未设置"
+            exit 1
+          else
+            echo "✅ FEISHU_WEBHOOK_URL: ${FEISHU_WEBHOOK_URL:0:50}..."
+          fi
+
+      - name: 测试 Python 导入
+        run: |
+          echo "=== 测试模块导入 ==="
+          python3 -c "import sys; print(f'Python: {sys.version}')"
+          python3 -c "from weather_monitor import format_weather_report; print('✅ weather_monitor')"
+          python3 -c "from news_monitor import format_news_report; print('✅ news_monitor')"
+          python3 -c "from feishu_sender import FeishuSender; print('✅ feishu_sender')"
+          python3 -c "from storage import NewsStorage; print('✅ storage')"
+          echo "✅ 所有模块导入成功"
+
+      - name: 测试飞书推送
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+        run: |
+          echo "=== 测试飞书推送 ==="
+          python3 -c "import requests; import os; r=requests.post(os.environ['FEISHU_WEBHOOK_URL'], json={'msg_type':'text','content':{'text':'✅ GitHub Actions 基础测试成功！'}}); print('✅ 推送成功' if r.status_code==200 else f'❌ 失败: {r.status_code}')"
