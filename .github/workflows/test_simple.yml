@@ -1,0 +1,77 @@
+name: 简化测试
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: 简化测试
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装依赖
+        run: |
+          pip install requests
+
+      - name: 测试环境变量
+        env:
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+        run: |
+          echo "检查环境变量..."
+          if [ -z "$TAVILY_API_KEY" ]; then
+            echo "❌ TAVILY_API_KEY 未设置"
+          else
+            echo "✅ TAVILY_API_KEY 已设置: ${TAVILY_API_KEY:0:10}..."
+          fi
+
+          if [ -z "$FEISHU_WEBHOOK_URL" ]; then
+            echo "❌ FEISHU_WEBHOOK_URL 未设置"
+          else
+            echo "✅ FEISHU_WEBHOOK_URL 已设置"
+          fi
+
+      - name: 列出文件
+        run: |
+          echo "项目文件："
+          ls -la *.py | head -20
+
+      - name: 测试 Python 脚本
+        env:
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+        run: |
+          python --version
+          echo "测试导入模块..."
+          python -c "from weather_monitor import format_weather_report; print('✅ weather_monitor 导入成功')"
+          python -c "from news_monitor import format_news_report; print('✅ news_monitor 导入成功')"
+          python -c "from feishu_sender import FeishuSender; print('✅ feishu_sender 导入成功')"
+          python -c "from storage import NewsStorage; print('✅ storage 导入成功')"
+
+      - name: 测试飞书推送
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+        run: |
+          python -c "
+import requests
+import json
+
+webhook_url = '${{ secrets.FEISHU_WEBHOOK_URL }}'
+data = {
+    'msg_type': 'text',
+    'content': {'text': 'GitHub Actions 测试成功！'}
+}
+response = requests.post(webhook_url, json=data)
+if response.status_code == 200:
+    print('✅ 飞书推送测试成功')
+else:
+    print(f'❌ 飞书推送失败: {response.status_code}')
+"
