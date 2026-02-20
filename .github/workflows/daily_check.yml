@@ -42,6 +42,10 @@ jobs:
         run: |
           pip install requests
 
+      - name: 创建必要目录
+        run: |
+          mkdir -p logs
+
       - name: 执行天气预警检查
         env:
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
@@ -77,6 +81,13 @@ jobs:
       - name: 安装依赖
         run: |
           pip install requests
+
+      - name: 创建必要目录和文件
+        run: |
+          mkdir -p logs
+          if [ ! -f sent_news.json ]; then
+            echo '{"news": []}' > sent_news.json
+          fi
 
       - name: 下载新闻记录
         continue-on-error: true
