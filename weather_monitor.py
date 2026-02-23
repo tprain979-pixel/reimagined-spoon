@@ -37,92 +37,108 @@ def search_weather_alerts(countries: List[str] = None) -> Dict:
 
 def format_weather_report(search_results: List[Dict]) -> str:
     """
-    格式化天气预警报告（中英文双语）
+    格式化天气预警报告（简洁版：总结+链接）
 
     Args:
         search_results: Tavily 搜索返回的结果
 
     Returns:
-        格式化的天气报告文本（中英文）
+        格式化的天气报告文本（简洁中文总结+链接）
     """
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # 标题（中英文）
-    report = "# 🌤️ 欧洲物流天气预警 | Europe Logistics Weather Alert\n\n"
-
-    # 基本信息
-    report += "**📅 报告时间 | Report Time:** " + timestamp + "\n"
-    report += "**📍 监控区域 | Monitoring Area:** 欧洲重点国家（德国、法国、荷兰、比利时、波兰）\n"
-    report += "**🔍 数据来源 | Data Source:** Tavily Real-time Search\n\n"
-
+    # 标题
+    report = "# 🌤️ 欧洲物流天气预警\n\n"
+    report += f"**📅 报告时间：** {timestamp}\n"
+    report += f"**📍 监控区域：** 德国、法国、荷兰、比利时、波兰\n\n"
     report += "---\n\n"
 
     # 无预警情况
     if not search_results or len(search_results) == 0:
-        report += "## ✅ 暂无重大天气预警 | No Major Weather Alerts\n\n"
-        report += "**中文：** 今日监控区域内暂无影响物流运输的重大天气预警，运输条件正常。\n\n"
-        report += "**English:** No significant weather alerts affecting logistics operations in the monitored regions today. Transport conditions are normal.\n\n"
-        report += "---\n\n"
-        report += "_💡 提示：系统将持续监控天气变化 | System continues to monitor weather conditions_"
+        report += "## ✅ 今日天气概览\n\n"
+        report += "**监控区域内暂无影响物流运输的重大天气预警，运输条件正常。**\n\n"
+        report += "建议继续关注天气变化，保持正常运输计划。\n\n"
         return report
 
-    # 有预警情况 - 添加中文概览
-    report += f"## 📋 今日概览\n\n"
+    # 有预警情况 - 生成整体中文总结
+    report += "## 📋 今日天气概览\n\n"
 
-    # 生成中文概览
+    # 统计和分类预警
+    weather_summary = []
+    countries_mentioned = set()
+    weather_types = set()
+
+    for result in search_results:
+        title = result.get("title", "").lower()
+        content = result.get("content", "").lower()
+        full_text = title + " " + content
+
+        # 提取国家
+        if "germany" in full_text or "german" in full_text:
+            countries_mentioned.add("德国")
+        if "france" in full_text or "french" in full_text:
+            countries_mentioned.add("法国")
+        if "netherlands" in full_text or "dutch" in full_text:
+            countries_mentioned.add("荷兰")
+        if "belgium" in full_text or "belgian" in full_text:
+            countries_mentioned.add("比利时")
+        if "poland" in full_text or "polish" in full_text:
+            countries_mentioned.add("波兰")
+
+        # 提取天气类型
+        if "storm" in full_text or "风暴" in full_text:
+            weather_types.add("暴风雨")
+        if "snow" in full_text or "雪" in full_text:
+            weather_types.add("降雪")
+        if "rain" in full_text or "雨" in full_text:
+            weather_types.add("降雨")
+        if "wind" in full_text or "大风" in full_text:
+            weather_types.add("大风")
+        if "temperature" in full_text or "温度" in full_text:
+            weather_types.add("极端温度")
+
+    # 生成总结文字
     report += f"**今日监控到 {len(search_results)} 条天气预警信息。**\n\n"
 
-    # 简要列举前3条预警
-    preview_items = []
-    for idx, result in enumerate(search_results[:3], 1):
-        title = result.get("title", "")
-        if title:
-            # 提取关键信息（取前50字符）
-            short_title = title[:50] + "..." if len(title) > 50 else title
-            preview_items.append(f"{idx}. {short_title}")
+    if countries_mentioned:
+        report += f"**涉及国家：** {' | '.join(sorted(countries_mentioned))}\n\n"
 
-    if preview_items:
-        report += "主要预警包括：\n"
-        for item in preview_items:
-            report += f"- {item}\n"
+    if weather_types:
+        report += f"**天气类型：** {' | '.join(sorted(weather_types))}\n\n"
 
-    if len(search_results) > 3:
-        report += f"\n还有 {len(search_results) - 3} 条其他预警，详见下方。\n"
+    # 主要影响总结
+    report += "**主要影响：** "
+    if "暴风雨" in weather_types or "大风" in weather_types:
+        report += "强风可能导致运输延误和安全风险。"
+    elif "降雪" in weather_types:
+        report += "降雪可能影响道路通行和运输效率。"
+    elif "降雨" in weather_types:
+        report += "降雨可能影响物流时效。"
+    else:
+        report += "天气条件可能对物流运输造成一定影响。"
+    report += "\n\n"
 
-    report += "\n**建议：** 请关注天气变化，必要时调整运输计划或路线安排。\n\n"
+    # 行动建议
+    report += "**📌 行动建议：** "
+    if len(countries_mentioned) >= 3:
+        report += "多个国家受影响，建议提前规划替代路线，密切关注天气发展。"
+    else:
+        report += "建议关注相关区域的天气变化，必要时调整运输计划。"
+    report += "\n\n"
 
     report += "---\n\n"
 
-    report += f"## ⚠️ 天气预警详情 | Weather Alert Details\n\n"
-    report += f"**🔔 预警数量 | Alert Count:** {len(search_results)} 条 | {len(search_results)} alerts\n\n"
-    report += "---\n\n"
+    # 详细信息（仅标题+链接）
+    report += "## 🔗 详细预警信息\n\n"
 
-    # 预警详情
     for idx, result in enumerate(search_results, 1):
         title = result.get("title", "无标题")
         url = result.get("url", "")
-        content = result.get("content", "")
 
-        # 标题
-        report += f"### {idx}. {title}\n\n"
-
-        # 内容摘要（前250字符）
-        summary = content[:250].strip() + "..." if len(content) > 250 else content.strip()
-        report += f"**📄 详情 | Details:**\n\n"
-        report += f"{summary}\n\n"
-
-        # 链接
+        report += f"**{idx}.** {title}\n"
         if url:
-            report += f"**🔗 来源链接 | Source:** {url}\n\n"
-
-        report += "---\n\n"
-
-    # 底部提示
-    report += "💡 **温馨提示 | Tips:**\n"
-    report += "- 🚚 请关注天气变化对物流运输的影响\n"
-    report += "- 🚛 Please monitor weather impacts on logistics operations\n"
-    report += "- 📞 如有紧急情况请及时调整运输计划\n"
-    report += "- 📱 Adjust transport plans promptly if necessary"
+            report += f"   📎 [查看详情]({url})\n"
+        report += "\n"
 
     return report
 

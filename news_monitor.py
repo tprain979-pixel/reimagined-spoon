@@ -39,125 +39,149 @@ def search_logistics_news(countries: List[str] = None, keywords: List[str] = Non
 
 def format_news_report(new_news: List[Dict]) -> Optional[str]:
     """
-    格式化物流新闻报告（中英文双语，仅包含新增新闻）
+    格式化物流新闻报告（简洁版：中文总结+链接）
 
     Args:
         new_news: 新增的新闻列表
 
     Returns:
-        格式化的新闻报告文本，如果没有新新闻则返回 None
+        格式化的新闻报告文本（简洁中文总结），如果没有新新闻则返回 None
     """
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     if not new_news or len(new_news) == 0:
-        # 如果没有新新闻，返回 None 表示不需要推送
         return None
 
-    # 标题（中英文）
-    report = "# 🚨 欧洲物流突发事件预警 | Europe Logistics Incident Alert\n\n"
-
-    # 基本信息
-    report += "**📅 报告时间 | Report Time:** " + timestamp + "\n"
-    report += "**📊 新增事件 | New Incidents:** " + str(len(new_news)) + " 条 | " + str(len(new_news)) + " alerts\n"
-    report += "**📍 监控区域 | Monitoring Area:** 德国、法国、荷兰、比利时、波兰 | Germany, France, Netherlands, Belgium, Poland\n"
-    report += "**🔍 数据来源 | Data Source:** Tavily Real-time Search (Past 24 hours)\n\n"
-
+    # 标题
+    report = "# 🚨 欧洲物流突发事件预警\n\n"
+    report += f"**📅 报告时间：** {timestamp}\n"
+    report += f"**📊 新增事件：** {len(new_news)} 条\n"
+    report += f"**📍 监控区域：** 德国、法国、荷兰、比利时、波兰\n\n"
     report += "---\n\n"
 
-    # 添加中文概览
-    report += "## 📋 今日概览\n\n"
-
-    # 统计紧急程度
+    # 统计分析
     high_count = sum(1 for n in new_news if n.get("score", 0) > 0.8)
     medium_count = sum(1 for n in new_news if 0.5 < n.get("score", 0) <= 0.8)
     low_count = len(new_news) - high_count - medium_count
 
-    # 生成概览文字
-    report += f"**过去24小时内新增 {len(new_news)} 条物流突发事件。**\n\n"
+    # 事件类型分析
+    countries_affected = set()
+    event_types = {}
 
-    # 紧急程度统计
-    urgency_parts = []
+    for news in new_news:
+        title = news.get("title", "").lower()
+        content = news.get("content", "").lower()
+        full_text = title + " " + content
+
+        # 国家
+        if "germany" in full_text or "german" in full_text or "hamburg" in full_text:
+            countries_affected.add("德国")
+        if "france" in full_text or "french" in full_text:
+            countries_affected.add("法国")
+        if "netherlands" in full_text or "dutch" in full_text or "rotterdam" in full_text:
+            countries_affected.add("荷兰")
+        if "belgium" in full_text or "belgian" in full_text:
+            countries_affected.add("比利时")
+        if "poland" in full_text or "polish" in full_text:
+            countries_affected.add("波兰")
+
+        # 事件类型
+        if "strike" in full_text:
+            event_types["罢工"] = event_types.get("罢工", 0) + 1
+        if "fire" in full_text:
+            event_types["火灾"] = event_types.get("火灾", 0) + 1
+        if "port" in full_text or "harbour" in full_text or "harbor" in full_text:
+            event_types["港口问题"] = event_types.get("港口问题", 0) + 1
+        if "warehouse" in full_text:
+            event_types["仓库事故"] = event_types.get("仓库事故", 0) + 1
+        if "disruption" in full_text or "delay" in full_text:
+            event_types["运输中断"] = event_types.get("运输中断", 0) + 1
+        if "closure" in full_text or "closed" in full_text:
+            event_types["关闭/封闭"] = event_types.get("关闭/封闭", 0) + 1
+
+    # 生成中文总结
+    report += "## 📋 今日总结\n\n"
+
+    # 紧急程度
+    urgency_text = []
     if high_count > 0:
-        urgency_parts.append(f"🔴 高紧急 {high_count} 条")
+        urgency_text.append(f"🔴 **{high_count} 条高紧急事件**")
     if medium_count > 0:
-        urgency_parts.append(f"🟡 中等 {medium_count} 条")
+        urgency_text.append(f"🟡 {medium_count} 条中等紧急")
     if low_count > 0:
-        urgency_parts.append(f"🟢 低紧急 {low_count} 条")
+        urgency_text.append(f"🟢 {low_count} 条低紧急")
 
-    if urgency_parts:
-        report += f"**紧急程度分布：** {' | '.join(urgency_parts)}\n\n"
+    report += f"**紧急程度：** {' | '.join(urgency_text)}\n\n"
 
-    # 事件类型分析（基于标题关键词）
-    event_types = []
-    titles_text = " ".join([n.get("title", "").lower() for n in new_news])
+    # 涉及国家
+    if countries_affected:
+        report += f"**涉及国家：** {' | '.join(sorted(countries_affected))}\n\n"
 
-    if "strike" in titles_text or "罢工" in titles_text:
-        event_types.append("罢工")
-    if "fire" in titles_text or "火灾" in titles_text:
-        event_types.append("火灾")
-    if "port" in titles_text or "港口" in titles_text:
-        event_types.append("港口问题")
-    if "warehouse" in titles_text or "仓库" in titles_text:
-        event_types.append("仓库问题")
-    if "disruption" in titles_text or "中断" in titles_text:
-        event_types.append("运输中断")
-
+    # 事件类型
     if event_types:
-        report += f"**涉及类型：** {' | '.join(event_types)}\n\n"
+        type_list = [f"{k}({v}条)" for k, v in sorted(event_types.items(), key=lambda x: x[1], reverse=True)]
+        report += f"**事件类型：** {' | '.join(type_list)}\n\n"
+
+    # 整体描述
+    report += "**📝 情况说明：**\n\n"
+
+    summary_parts = []
+
+    # 按类型生成描述
+    if "罢工" in event_types:
+        summary_parts.append(f"监控到 {event_types['罢工']} 起罢工事件，可能影响港口和运输效率")
+
+    if "火灾" in event_types:
+        summary_parts.append(f"发生 {event_types['火灾']} 起仓库或设施火灾，相关物流节点受影响")
+
+    if "港口问题" in event_types:
+        summary_parts.append(f"{event_types['港口问题']} 个港口出现运营问题，可能导致货物延误")
+
+    if "运输中断" in event_types or "关闭/封闭" in event_types:
+        summary_parts.append("部分运输路线或设施受阻，建议寻找替代方案")
+
+    for part in summary_parts:
+        report += f"- {part}\n"
+
+    report += "\n"
 
     # 行动建议
     if high_count > 0:
-        report += "**⚠️ 重点关注：** 发现高紧急事件，建议立即评估对物流的影响并采取应对措施。\n\n"
+        report += "**⚠️ 重点建议：** 发现高紧急事件，建议：\n"
+        report += "1. 立即评估对当前运输计划的影响\n"
+        report += "2. 联系相关物流服务商确认情况\n"
+        report += "3. 必要时启动应急预案或调整路线\n\n"
     else:
-        report += "**📊 情况评估：** 当前事件紧急程度较低，建议持续关注事态发展。\n\n"
+        report += "**📊 建议：** 当前事件紧急程度不高，建议持续关注事态发展，暂无需立即调整计划。\n\n"
 
     report += "---\n\n"
 
-    report += "## ⚠️ 新增事件详情 | New Incident Details\n\n"
-    report += "**⚡ 中文：** 以下为过去24小时内新增的物流相关事件，请注意关注\n"
-    report += "**⚡ English:** Following incidents occurred in the past 24 hours, please pay attention\n\n"
+    # 详细事件列表（仅标题+链接）
+    report += "## 🔗 详细事件列表\n\n"
 
-    # 事件详情
-    for idx, news in enumerate(new_news, 1):
+    # 按紧急程度排序
+    sorted_news = sorted(new_news, key=lambda x: x.get("score", 0), reverse=True)
+
+    for idx, news in enumerate(sorted_news, 1):
         title = news.get("title", "无标题")
         url = news.get("url", "")
-        content = news.get("content", "")
         score = news.get("score", 0)
 
-        # 根据相关性分数判断重要程度
+        # 紧急程度标记
         if score > 0.8:
-            urgency_cn = "🔴 高"
-            urgency_en = "🔴 High"
+            urgency_icon = "🔴"
         elif score > 0.5:
-            urgency_cn = "🟡 中"
-            urgency_en = "🟡 Medium"
+            urgency_icon = "🟡"
         else:
-            urgency_cn = "🟢 低"
-            urgency_en = "🟢 Low"
+            urgency_icon = "🟢"
 
-        # 事件标题
-        report += f"### 📰 {idx}. {title}\n\n"
-
-        # 紧急程度（双语）
-        report += f"**⚡ 紧急程度 | Urgency:** {urgency_cn} | {urgency_en}\n\n"
-
-        # 内容摘要（前280字符）
-        summary = content[:280].strip() + "..." if len(content) > 280 else content.strip()
-        report += f"**📋 事件描述 | Description:**\n\n"
-        report += f"{summary}\n\n"
-
-        # 链接
+        report += f"**{idx}. {urgency_icon} {title}**\n"
         if url:
-            report += f"**🔗 详情链接 | Source:** {url}\n\n"
+            report += f"   📎 [查看详情]({url})\n"
+        report += "\n"
 
-        report += "---\n\n"
-
-    # 底部提示
-    report += "💡 **重要提示 | Important Notes:**\n\n"
-    report += "✅ **中文：** 系统已记录这些事件，相同事件不会重复推送\n\n"
-    report += "✅ **English:** These incidents have been recorded and will not be pushed repeatedly\n\n"
-    report += "📞 **中文：** 如遇影响请及时调整物流计划或联系相关部门\n\n"
-    report += "📱 **English:** Please adjust logistics plans or contact relevant departments if affected"
+    report += "---\n\n"
+    report += "_💡 系统已记录这些事件，相同事件不会重复推送_"
 
     return report
 
